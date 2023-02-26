@@ -1,0 +1,10 @@
+name: TwitchIntegration
+version: '${project.version}'
+main: me.bananababoo.twitchintegration.TwitchIntegration
+api-version: 1.18
+authors: [ bananababoo ]
+description: test plugin to connect to twitch irc
+commands:
+  twitch:
+    description: Connects to a twitch channel print it mc chat
+    usage: /<command>
