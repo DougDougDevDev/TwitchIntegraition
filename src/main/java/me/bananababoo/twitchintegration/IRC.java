@@ -28,58 +28,85 @@ public class IRC {
     }
 
     public static void irc(String channel) throws IOException {
-        Socket socket = new Socket("irc.chat.twitch.tv", 80);
-        out = new PrintWriter(socket.getOutputStream(), true);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        write("PASS oauth:", "9umqyyatjoxzfh2n5mna07hurbj9o4");
-        write("NICK ", "bananababoo");
-        write("JOIN #", channel);
-        int count = 0;
+        try {
+            Socket socket = new Socket("irc.chat.twitch.tv", 80);
+            out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            write("PASS oauth:", "9umqyyatjoxzfh2n5mna07hurbj9o4");
+            write("NICK ", "bananababoo");
+            write("JOIN #", channel);
+            int count = 0;
 
-        Bukkit.getLogger().info("Trying to connect");
-        Bukkit.getScheduler().scheduleSyncRepeatingTask(TwitchIntegration.getPlugin(), () -> {
-            long time1 = System.currentTimeMillis();
-            String message = "";
-            try {
-                while(reader.ready()) {
-                    message = reader.readLine();
-                    Bukkit.getLogger().info("<<<" + message);
-                    if (!message.equalsIgnoreCase("")) {
+            Bukkit.getLogger().info("Trying to connect" + reader + " " + reader.ready());
+            while (reader.ready()) {
+                String message = reader.readLine();
+                if (message == null) Bukkit.getLogger().info("got null message / line");
+                Bukkit.getLogger().info(message);
+                if (message.contains("Welcome, GLHF!")) {
+                    Bukkit.getLogger().info("Connected");
+                    break;
+                }
+                if (count > 10) {
+                    Bukkit.getLogger().info("Failed to connect");
+                    return;
+                }
+                count++;
+            }
+            Bukkit.getLogger().info("Connected");
+            Bukkit.getScheduler().runTaskTimerAsynchronously(TwitchIntegration.getPlugin(), () -> {
+                String message = "";
+                try {
+                    while (reader.ready()) {
+                        message = reader.readLine();
+                        Bukkit.getLogger().info("<<<" + message);
+                        if (!message.equalsIgnoreCase("")) {
 
-                        for (Player p : players) {
-                            String username = message.substring(1, message.indexOf("!") - 1);
-                            String output = message.substring(message.indexOf(":", message.indexOf(":") + 1));
-                            p.sendMessage(ChatColor.BLUE + username + ": " + ChatColor.GRAY + output.substring(1));
-                        }
-                        if (message.equalsIgnoreCase("PING :tmi.twitch.tv")) {
-                            out.print("PONG :tmi.twitch.tv" + "\r\n");
-
-                        }
-                        if (!Twitch.isActive()) {
-                            for (Player p : Bukkit.getOnlinePlayers()) {
-                                p.sendMessage("Connection Ended");
+                            for (Player p : players) {
+                                String username = message.substring(1, message.indexOf("!") - 1);
+                                String output = message.substring(message.indexOf(":", message.indexOf(":") + 1));
+                                p.sendMessage(ChatColor.BLUE + username + ": " + ChatColor.GRAY + output.substring(1));
+//                                p.getScheduler().run(TwitchIntegration.getPlugin(),
+//                                        (a) -> p.sendMessage(ChatColor.BLUE + username + ": " + ChatColor.GRAY + output.substring(1)),
+//                                        () -> Bukkit.getLogger().info("Failed to send message to " + p.getName()));
                             }
-                            out.flush();
-                            out.close();
-                            Bukkit.getScheduler().cancelTasks(TwitchIntegration.getPlugin());
-                            try {
-                                socket.close();
-                                reader.close();
-                            } catch (IOException e) {
-                                Bukkit.getLogger().warning(Arrays.toString(e.getStackTrace()));
+                            if (message.equalsIgnoreCase("PING :tmi.twitch.tv")) {
+                                out.print("PONG :tmi.twitch.tv" + "\r\n");
+
+                            }
+                            if (!Twitch.isActive()) {
+                                for (Player p : players) {
+                                    p.sendMessage("Connection Ended");
+//                                    p.getScheduler().run(TwitchIntegration.getPlugin(),
+//                                            (a) -> p.sendMessage("Connection Ended"),
+//                                            () -> Bukkit.getLogger().info("Failed to send message to " + p.getName()));
+                                }
+                                out.flush();
+                                out.close();
+                                Bukkit.getScheduler().cancelTasks(TwitchIntegration.getPlugin());
+                                try {
+                                    socket.close();
+                                    reader.close();
+                                } catch (IOException e) {
+                                    Bukkit.getLogger().warning(Arrays.toString(e.getStackTrace()));
+                                    e.printStackTrace();
+                                    return;
+                                }
                                 return;
                             }
-                            return;
                         }
                     }
+
+                } catch (IOException e) {
+                    Bukkit.getLogger().warning(e.getMessage());
+                    e.printStackTrace();
+                    Bukkit.getLogger().warning(Arrays.toString(e.getStackTrace()));
                 }
 
-            } catch (IOException e) {
-                Bukkit.getLogger().warning(e.getMessage());
-            }
-
-        }, 1, 10);
-
+            }, 0, 10);
+        }catch (Exception e){
+            Bukkit.getLogger().warning(Arrays.toString(e.getStackTrace()) + " got error");
+            e.printStackTrace();
+        }
         }
 
 
@@ -88,7 +115,6 @@ public class IRC {
         Bukkit.getLogger().info(">>> " + fullMessage);
         out.print(fullMessage + "\r\n");
         out.flush();
-
     }
 }
 

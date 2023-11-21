@@ -1,7 +1,7 @@
 name: TwitchIntegration
 version: '${project.version}'
 main: me.bananababoo.twitchintegration.TwitchIntegration
-api-version: 1.18
+api-version: 1.20
 authors: [ bananababoo ]
 description: test plugin to connect to twitch irc
 commands:
